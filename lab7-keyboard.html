@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>AIST2010 Lab 7 - Web Audio Piano</title>
+
+<script src="https://unpkg.com/tone@15.1.22/build/Tone.js"></script>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    text-align:center;
+    background:#f4f4f4;
+    padding:20px;
+}
+
+h1{
+    color:#333;
+}
+
+button{
+    padding:10px 20px;
+    font-size:16px;
+    margin:5px;
+}
+
+.waveform{
+    margin-top:20px;
+    color:darkblue;
+    font-weight:bold;
+}
+
+.controls{
+    margin-top:20px;
+}
+
+.slider{
+    width:300px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>AIST2010 Lab 7 Web Piano</h1>
+
+<button id="startBtn">Start Audio</button>
+
+<br><br>
+
+<img src="keys.png" width="700">
+
+<p>
+Keyboard Notes:<br>
+D R F T G H U J I K O L ;
+</p>
+
+<div class="waveform">
+Current Waveform:
+<span id="waveDisplay">sine</span>
+</div>
+
+<p>
+Z = sine |
+X = triangle |
+C = square |
+V = sawtooth
+</p>
+
+<div class="controls">
+<h3>Volume Control (Extra Feature)</h3>
+
+<input
+class="slider"
+type="range"
+min="-40"
+max="0"
+value="-12"
+id="volumeSlider">
+
+<p>
+Volume:
+<span id="volumeValue">-12</span> dB
+</p>
+</div>
+
+<script>
+
+// ---------- Audio Objects ----------
+
+const synth = new Tone.Synth({
+    oscillator:{
+        type:"sine"
+    }
+}).toDestination();
+
+const volumeNode = new Tone.Volume(-12).toDestination();
+
+synth.disconnect();
+synth.connect(volumeNode);
+
+// ---------- Audio Start ----------
+
+document.getElementById("startBtn").addEventListener(
+    "click",
+    async () => {
+        await Tone.start();
+        console.log("Audio Started");
+    }
+);
+
+// ---------- Notes ----------
+
+let octaveOffset = 0;
+
+const noteMap = {
+    "d":"C4",
+    "r":"C#4",
+    "f":"D4",
+    "t":"D#4",
+    "g":"E4",
+    "h":"F4",
+    "u":"F#4",
+    "j":"G4",
+    "i":"G#4",
+    "k":"A4",
+    "o":"A#4",
+    "l":"B4",
+    ";":"C5"
+};
+
+// ---------- Waveforms ----------
+
+const waveformMap = {
+    "z":"sine",
+    "x":"triangle",
+    "c":"square",
+    "v":"sawtooth"
+};
+
+// ---------- Key Down ----------
+
+document.addEventListener("keydown", e => {
+
+    if(e.repeat)
+        return;
+
+    const key = e.key.toLowerCase();
+
+    // waveform selection
+
+    if(waveformMap[key]){
+
+        synth.oscillator.type =
+            waveformMap[key];
+
+        document.getElementById(
+            "waveDisplay"
+        ).textContent =
+            waveformMap[key];
+
+        return;
+    }
+
+    // octave up
+
+    if(key === "]"){
+        octaveOffset++;
+        return;
+    }
+
+    // octave down
+
+    if(key === "["){
+        octaveOffset--;
+        return;
+    }
+
+    // notes
+
+    if(noteMap[key]){
+
+        let note = Tone.Frequency(
+            noteMap[key]
+        ).transpose(
+            octaveOffset * 12
+        ).toNote();
+
+        synth.triggerAttack(note);
+    }
+
+});
+
+// ---------- Key Up ----------
+
+document.addEventListener("keyup", e => {
+
+    const key = e.key.toLowerCase();
+
+    if(noteMap[key]){
+        synth.triggerRelease();
+    }
+
+});
+
+// ---------- Volume Slider ----------
+
+const volumeSlider =
+document.getElementById("volumeSlider");
+
+volumeSlider.addEventListener(
+    "input",
+    e => {
+
+        let value =
+        Number(e.target.value);
+
+        volumeNode.volume.value =
+        value;
+
+        document.getElementById(
+            "volumeValue"
+        ).textContent = value;
+    }
+);
+
+</script>
+
+</body>
+</html>
